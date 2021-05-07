@@ -173,7 +173,26 @@ function followersPerSec() {
 }
 
 function worshipPerSec() {
-	return player.baseWorshipProd;
+	let w = player.baseWorshipProd;
+	let fBoost = new Decimal(player.followers.log10()-1);
+	if (player.cultType=='Proselyte' && fBoost.gte(1)) { fBoost = fBoost.sqrt(); }
+	else if (player.cultType=='Proselyte') { fBoost = fBoost.pow(2); }
+	if (hasUpgrade('cult', 'Proselyte', 1)) { fBoost = fBoost.times(upgradeEffect('cult', 'Proselyte', 1)); }
+	w = w.plus(fBoost);
+	if (hasUpgrade('cult', 'Clandestine', 1)) { w = w.times(upgradeEffect('cult', 'Clandestine', 1)); }
+	return w;
+}
+
+function miracleCost() {
+	return player.lastMiracleCost.plus(Decimal.floor(Decimal.sqrt(player.totalMiracles)));
+}
+
+function miracleGain() {
+	if (player.isCult) {
+		return player.baseMiracleGain;
+	} else {
+		return player.baseMiracleGain;
+	}
 }
 
 //timer

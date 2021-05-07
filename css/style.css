@@ -2,17 +2,27 @@ body {
     background-color: #95dffc;
     max-width: 1280px;
     margin: auto;
+    font-family: 'Nova Script', cursive;
+}
+
+h3 {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    font-size: 20pt;
 }
 
 h4 {
     margin-top: 5px;
     margin-bottom: 5px;
+    font-family: 'Nova Script', cursive;
+    font-size: 14pt;
 }
 
 #resource-display {
     height: 200px;
-    width: 200px;
+    width: 300px;
     border: 1px solid white;
+    text-align: left;
     float: left;
 }
 
@@ -26,13 +36,13 @@ h4 {
 
 #main-controls {
     height: 200px;
-    width: 200px;
+    width: 300px;
     border: 1px solid white;
     float: right;
 }
 
 #miracle-but {
-    width: 200px;
+    width: 250px;
     height: 75px;
     border-radius: 4px;
     vertical-align: middle;
@@ -50,7 +60,7 @@ h4 {
 }
 
 .advance-but {
-    width: 200px;
+    width: 250px;
     height: 75px;
     border-radius: 4px;
     vertical-align: middle;
@@ -77,14 +87,14 @@ h4 {
     color: white;
     border: 3px solid white;
     box-shadow: 3px 3px #252525;
-    width: 450px;
+    width: 500px;
     border-radius: 4px;
     z-index: 9;
 }
 
 .adv-choice-but {
-    width: 200px;
-    height: 100px;
+    width: 205px;
+    height: 115px;
     color: white;
     background-color: #1f1f1f;
     border: 1px solid #525252;
@@ -94,6 +104,63 @@ h4 {
 
 .adv-choice-but:hover {
     background-color: #525252;
+}
+
+.upgrade-but {
+    width: 250px;
+    height: 150px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+.upgrade-but.can {
+    border: 1px solid #1fff57;
+    background-color: #008a17;
+    cursor: pointer;
+}
+
+.upgrade-but.can:hover {
+    background-color: #1fff57;
+}
+
+.bought-upgrade-but {
+    width: 250px;
+    height: 75px;
+    border: 1px solid white;
+    background-color: #95dffc;
+    cursor: default;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+.option-but {
+    width: 100px;
+    height: 25px;
+    border: 1px solid #525252;
+    background-color: #1f1f1f;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+.option-but:hover {
+    background-color: #525252;
+}
+
+#cult-tenet-upgrades {
+    text-align: center;
+    float: right;
+    width: 50%;
+}
+
+#cult-upgrades {
+    text-align: center;
+    float: left;
+    width: 50%;
 }
 
 .cant {

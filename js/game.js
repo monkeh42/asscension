@@ -16,7 +16,15 @@ function init() {
 
 function loadGame() {
     setupData();
-    copyData(player, START_PLAYER);
+    player = {};
+    var savePlayer = localStorage.getItem('ascsave');
+    if (savePlayer === null || savePlayer === undefined) {
+        copyData(player, START_PLAYER);
+    } else {
+        copyData(player, JSON.parse(window.atob(savePlayer)));
+        if (Object.keys(player).length == 0) { copyData(player, START_PLAYER); }
+    }
+    fixData(player, START_PLAYER); 
     miracleTimer = new Timer(function() {}, 0);
 
     loadVue();
@@ -30,9 +38,18 @@ function addData(id, name, data) {
 
 function setupData() {
     addData('adv', 'advancements', ADVANCEMENTS);
+    addData('upg', 'upgrades', UPGRADES);
+}
+
+function save() {
+    localStorage.setItem('ascsave', window.btoa(JSON.stringify(player)));
 }
 
 function startGame() {
+    player.lastUpdate = new Date();
+    player.lastAutoSave = new Date();
+    save();
+
     startInterval();
 }
 
@@ -51,6 +68,11 @@ function gameLoop() {
     }
     player.followers = Decimal.floor(player.realFollowers);
 
+    if ((currentUpdate-player.lastAutoSave)>10000) { 
+        player.lastAutoSave = currentUpdate;
+        save();
+    }
+
     player.lastUpdate = currentUpdate;
 }
 
@@ -61,9 +83,11 @@ function miracleClick() {
 }
 
 function castMiracle() {
-    player.realFollowers = player.realFollowers.plus(player.miracleGain);
+    player.realFollowers = player.realFollowers.plus(miracleGain());
     if (player.isCult) {
-        player.worship = player.worship.minus(player.miracleCost);
+        player.worship = player.worship.minus(miracleCost());
+        player.lastMiracleCost = new Decimal(miracleCost());
+        player.totalMiracles++;
     } else {
         player.miracleOnCooldown = true;
         miracleTimer = new Timer(function() {
@@ -75,7 +99,7 @@ function castMiracle() {
 
 function canCastMiracle() {
     if (player.isCult) {
-        return player.worship.gte(player.miracleCost);
+        return player.worship.gte(miracleCost());
     } else {
         return !player.miracleOnCooldown;
     }
@@ -83,22 +107,50 @@ function canCastMiracle() {
 
 //advancements
 
-function advancePopup(title1, title2, desc1, desc2, advID) {
+function advancePopup(title1, title2, desc1, desc2, meta1, meta2, advID) {
     if (DATA.adv[advID].canAdvance()) {
         app.$refs['advpop'].opt1Title = title1;
         app.$refs['advpop'].opt2Title = title2;
         app.$refs['advpop'].opt1Desc = desc1;
         app.$refs['advpop'].opt2Desc = desc2;
+        app.$refs['advpop'].opt1Meta = meta1;
+        app.$refs['advpop'].opt2Meta = meta2;
         app.$refs['advpop'].arg = advID;
         app.$refs['advpop'].isActivePop = true;
     }
 }
 
-function advanceChoice(advID, opt) {
+//upgrades
 
+function canAffordUpgrade(tier, tenet, id) {
+    return (player.worship.gte(DATA.upg[tier][tenet][id].cost())&&!hasUpgrade(tier, tenet, id));
+}
+
+function buyUpgrade(tier, tenet, id) {
+    if (player.worship.gte(DATA.upg[tier][tenet][id].cost())) {
+        player.worship = player.worship.minus(DATA.upg[tier][tenet][id].cost());
+        player.upgrades[tier][tenet][id] = true;
+        DATA.upg[tier][tenet][id].onBuy();
+    }
+}
+
+function hasUpgrade(tier, tenet, id) {
+    return DATA.upg[tier][tenet][id].bought();
+}
+
+function upgradeEffect(tier, tenet, id) {
+    return DATA.upg[tier][tenet][id].effect();
 }
 
 //fixes and data manipulation
+
+function hardReset() {
+    if (confirm('This will reset ALL of your progress and can\'t be undone.')) {
+        player = null;
+        save();
+        window.location.reload(true);
+    }
+}
 
 function copyData(data, start) {
     for (item in start) {

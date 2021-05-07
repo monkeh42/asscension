@@ -11,37 +11,53 @@
     <script type="text/javascript" src="js/tools/data_objects.js"></script>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Script&display=swap" rel="stylesheet">
 </head>
 
 <body onload="init()">
     <div id="app">
         <div id="header">
             <div id="resource-display">
-                <table id="resource-table">
+                <table id="resource-table" style="width: 100%;">
                     <tr>
                         <td>
-                            Followers: {{ formatWhole(getFollowers()) }}
+                            Followers: 
+                        </td>
+                        <td>
+                            {{ formatWhole(getFollowers()) }}
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            Worship: {{ formatDefault(player.worship) }}
+                            Worship: 
+                        </td>
+                        <td>
+                            {{ formatDefault(player.worship) }}
                         </td>
                     </tr>
-                    <tr>
+                    <tr v-if="player.isCult">
                         <td>
-                            <span v-if="player.isCult">Follower recruitment: {{ formatDefault(followersPerSec()) }}/sec</span>
+                            Follower recruitment: 
+                        </td>
+                        <td>
+                            {{ formatDefault(followersPerSec()) }}/sec
                         </td>
                     </tr>
-                    <tr>
+                    <tr v-if="player.isCult">
                         <td>
-                            <span v-if="player.isCult">Worship generation: {{ formatDefault(worshipPerSec()) }}/sec</span>
+                            Worship generation: 
+                        </td>
+                        <td>
+                            {{ formatDefault(worshipPerSec()) }}/sec
                         </td>
                     </tr>
                 </table>
             </div>
             <div id="main-controls">
-
+                <button class="option-but" v-on:click="hardReset()">
+                    Hard Reset
+                </button>
             </div>
             <div id="miracle-controls">
                 <miracle-button></miracle-button>
@@ -49,7 +65,14 @@
             </div>
         </div>
         <div id="upgrades">
-
+            <div v-if="player.isCult" id="cult-upgrades">
+                <h3>Cult Upgrades</h3>
+            </div>
+            <div v-if="player.isCult" id="cult-tenet-upgrades">
+                <h3>{{ player.cultType }} Upgrades</h3>
+                <upgrade-button tier="cult" tenet="Clandestine" :id="parseInt(1)"></upgrade-button>
+                <upgrade-button tier="cult" tenet="Proselyte" :id="parseInt(1)"></upgrade-button>
+            </div>
         </div>
         <adv-choice-popup ref="advpop"></adv-choice-popup>
     </div>
