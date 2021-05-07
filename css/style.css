@@ -1,0 +1,103 @@
+body {
+    background-color: #95dffc;
+    max-width: 1280px;
+    margin: auto;
+}
+
+h4 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#resource-display {
+    height: 200px;
+    width: 200px;
+    border: 1px solid white;
+    float: left;
+}
+
+#miracle-controls {
+    height: 200px;
+    width: 300px;
+    border: 1px solid white;
+    margin: auto;
+    text-align: center;
+}
+
+#main-controls {
+    height: 200px;
+    width: 200px;
+    border: 1px solid white;
+    float: right;
+}
+
+#miracle-but {
+    width: 200px;
+    height: 75px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+#miracle-but.can {
+    border: 1px solid #eeff55;
+    background-color: #bfdb21;
+    cursor: pointer;
+}
+
+#miracle-but.can:hover {
+    background-color: #eeff55;
+}
+
+.advance-but {
+    width: 200px;
+    height: 75px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+.advance-but.can {
+    border: 1px solid #e93eff;
+    background-color: #bf00c5;
+    cursor: pointer;
+}
+
+.advance-but.can:hover {
+    background-color: #e93eff;
+}
+
+.adv-popup {
+    position: fixed;
+    left: 50%;
+	top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    text-align: center;
+    background-color: black;
+    color: white;
+    border: 3px solid white;
+    box-shadow: 3px 3px #252525;
+    width: 450px;
+    border-radius: 4px;
+    z-index: 9;
+}
+
+.adv-choice-but {
+    width: 200px;
+    height: 100px;
+    color: white;
+    background-color: #1f1f1f;
+    border: 1px solid #525252;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.adv-choice-but:hover {
+    background-color: #525252;
+}
+
+.cant {
+    background-color: #707070;
+    border: 1px solid #707070;
+    cursor: not-allowed;
+}

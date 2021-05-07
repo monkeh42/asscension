@@ -1,0 +1,58 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>Asscension</title>
+    <script type="text/javascript" src="js/game.js"></script>
+    <script type="text/javascript" src="js/tools/utils.js"></script>
+    <script type="text/javascript" src="js/tools/components.js"></script>
+    <script type="text/javascript" src="js/tools/break_infinity.js"></script>
+    <script type="text/javascript" src="js/tools/data_objects.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+</head>
+
+<body onload="init()">
+    <div id="app">
+        <div id="header">
+            <div id="resource-display">
+                <table id="resource-table">
+                    <tr>
+                        <td>
+                            Followers: {{ formatWhole(getFollowers()) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Worship: {{ formatDefault(player.worship) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span v-if="player.isCult">Follower recruitment: {{ formatDefault(followersPerSec()) }}/sec</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span v-if="player.isCult">Worship generation: {{ formatDefault(worshipPerSec()) }}/sec</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div id="main-controls">
+
+            </div>
+            <div id="miracle-controls">
+                <miracle-button></miracle-button>
+                <advance-button data="cult"></advance-button>
+            </div>
+        </div>
+        <div id="upgrades">
+
+        </div>
+        <adv-choice-popup ref="advpop"></adv-choice-popup>
+    </div>
+</body>
+
+</html>
