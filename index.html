@@ -95,9 +95,9 @@
                         </td>
                     </tr>
                 </table>
-                <div style="text-align: center;">
+                <div v-if="player.isCult && player.branches.length>1" style="text-align: center;">
                     <h4>Select Branch:</h4>
-                    <select class="branch-dropdown" v-if="player.isCult && player.branches.length>1" v-model="selectedBranch">
+                    <select class="branch-dropdown" v-model="selectedBranch">
                         <option v-for="i in player.branches.length" :value="i-1" v-html="i"></option>
                     </select>
                 </div>

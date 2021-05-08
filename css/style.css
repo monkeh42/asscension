@@ -61,10 +61,6 @@ h4 {
     outline: none;
 }
 
-.branch-dropdown > option {
-    text-align-last: center;
-}
-
 #miracle-but {
     width: 250px;
     height: 75px;
