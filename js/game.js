@@ -59,6 +59,28 @@ function save() {
     localStorage.setItem('ascsave', window.btoa(JSON.stringify(player)));
 }
 
+function importSave() {
+    let imp = prompt('Copy the text below for export, overwrite and click OK for import.', exportSave());
+
+    if (imp !== undefined) {
+        try {
+            copyData(player, JSON.parse(window.atob(imp)));
+            if (Object.keys(player).length == 0) { copyData(player, START_PLAYER); }
+        } catch(e) {
+            return;
+        }
+    }
+    
+    fixData(player, START_PLAYER); 
+    save();
+    window.location.reload();
+}
+
+function exportSave() {
+    let exp = window.btoa(JSON.stringify(player));
+    return exp;
+}
+
 function startGame() {
     player.lastUpdate = new Date();
     player.lastAutoSave = new Date();

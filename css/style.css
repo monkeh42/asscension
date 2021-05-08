@@ -48,8 +48,8 @@ h4 {
 
 .save-notify {
     position: absolute;
-    margin-bottom: 10px;
-    bottom: 0px;
+    margin-bottom: 5px;
+    bottom: 35px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 10pt;
@@ -176,10 +176,11 @@ h4 {
 }
 
 .option-but {
-    width: 100px;
+    width: 90px;
     height: 25px;
     border: 1px solid #525252;
     background-color: #1f1f1f;
+    font-size: 8pt;
     color: white;
     cursor: pointer;
     border-radius: 4px;
