@@ -106,8 +106,13 @@
                 <miracle-button></miracle-button>
                 <advance-button data="cult"></advance-button>
                 <branch-button></branch-button>
+                <div v-if="autosaveNotify" class="save-notify">Autosaved!</div>
+                <div v-if="manSaveNotify" class="save-notify">Saved!</div>
                 <button class="option-but" v-on:click="hardReset()" style="position: absolute; bottom: 0; left: 0;">
                     Hard Reset
+                </button>
+                <button class="option-but" v-on:click="manualSave()" style="position: absolute; bottom: 0; right: 0;">
+                    Manual Save
                 </button>
             </div>
         </div>

@@ -46,6 +46,15 @@ h4 {
     float: right;
 }
 
+.save-notify {
+    position: absolute;
+    margin-bottom: 10px;
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10pt;
+}
+
 .branch-dropdown {
     display: inline-block;
     background-color: #95dffc;

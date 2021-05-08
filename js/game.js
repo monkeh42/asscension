@@ -8,6 +8,10 @@ var DATA = {};
 
 var miracleTimer;
 
+var autosaveNotify = false;
+
+var manSaveNotify = false;
+
 function init() {
     loadGame();
 
@@ -45,6 +49,12 @@ function setupData() {
     addData('upg', 'upgrades', UPGRADES);
 }
 
+function manualSave() {
+    save();
+    manSaveNotify = true;
+    setTimeout(function() { manSaveNotify = false; }, 1500);
+}
+
 function save() {
     localStorage.setItem('ascsave', window.btoa(JSON.stringify(player)));
 }
@@ -78,6 +88,8 @@ function gameLoop() {
     if ((currentUpdate-player.lastAutoSave)>10000) { 
         player.lastAutoSave = currentUpdate;
         save();
+        autosaveNotify = true;
+        setTimeout(function() { autosaveNotify = false; }, 1500);
     }
 
     player.lastUpdate = currentUpdate;
