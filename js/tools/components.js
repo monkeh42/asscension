@@ -38,7 +38,7 @@ function loadVue() {
 		<div>
 			<button v-on:click="miracleClick()" id="miracle-but" v-bind:class="{ cant: !canCastMiracle(), can: canCastMiracle() }">
                 <h4 v-html="player.isCult ? 'Perform Minor Miracle' : 'Bestow Grace'"></h4>
-                <span>Gain <num-text :val="formatWhole(miracleGain())" label="followers"></num-text><br></span>
+                <span>Gain <num-text :val="formatWhole(miracleGain())" :label="(player.isCult && player.branches.length>1) ? 'branch followers' : 'followers'"></num-text><br></span>
                 <span v-if="player.isCult">Costs {{ formatWhole(miracleCost()) }} worship<br></span>
                 <span v-if="player.miracleOnCooldown">Cooldown: {{ format(player.timeLeft/1000) }}s</span>
 			</button>
@@ -53,6 +53,18 @@ function loadVue() {
 			<button v-on:click="advancePopup(DATA.adv[data].optOne.title, DATA.adv[data].optTwo.title, DATA.adv[data].optOne.desc, DATA.adv[data].optTwo.desc, DATA.adv[data].optOne.metaDesc, DATA.adv[data].optTwo.metaDesc, data)" id="cult-advance-but" v-bind:class="{ 'advance-but': true, cant: !DATA.adv[data].canAdvance(), can: DATA.adv[data].canAdvance() }">
                 <h4>{{ DATA.adv[data].buttonTitle }}</h4>
                 <span>{{ DATA.adv[data].buttonDesc }}</span>
+			</button>
+		</div>
+		`
+	})
+
+    Vue.component('branch-button', {
+		props: [],
+		template: `
+		<div v-if="showBranch()">
+			<button v-on:click="newBranch()" id="new-branch-but" v-bind:class="{ 'branch-but': true, cant: !canBranch(), can: canBranch() }">
+                <h4>Develop New Cult Branch</h4>
+                <span>Requires {{ formatWhole(getBranchReq()) }} total followers</span>
 			</button>
 		</div>
 		`
@@ -97,19 +109,73 @@ function loadVue() {
 		`
 	})
 
-    Vue.component('upgrade-button', {
-		props: ['tier', 'tenet', 'id'],
+    Vue.component('type-upgrade-button', {
+		props: ['id'],
 		template: `
-		<div v-if="DATA.upg[tier][tenet][id].show()">
-			<button v-on:click="buyUpgrade(tier, tenet, id)" :id="tier + '-' + tenet + '-' + id + '-but'" v-bind:class="{ 'upgrade-but': !hasUpgrade(tier, tenet, id), 'bought-upgrade-but': hasUpgrade(tier, tenet, id), cant: ((!canAffordUpgrade(tier, tenet, id))||(!DATA.upg[tier][tenet][id].requirement.isMet()))&&!hasUpgrade(tier, tenet, id), can: (canAffordUpgrade(tier, tenet, id)&&DATA.upg[tier][tenet][id].requirement.isMet())&&!hasUpgrade(tier, tenet, id) }">
-                <h4 v-html="DATA.upg[tier][tenet][id].title"></h4>
-				<div v-if="!hasUpgrade(tier, tenet, id)">
-					<span v-html="DATA.upg[tier][tenet][id].desc"></span><br>
-					<span>Requires {{ formatWhole(DATA.upg[tier][tenet][id].requirement.amount) }} {{ DATA.upg[tier][tenet][id].requirement.resource }}</span><br>
-					<span>Costs {{ formatWhole(DATA.upg[tier][tenet][id].cost()) }} worship</span>
+		<div v-if="DATA.upg.type[player.cultType][id].show()">
+			<button v-on:click="buyTypeUpgrade(id)" :id="'type-upg-button-' + player.cultType + '-' + id" v-bind:class="{ 'upgrade-but': !DATA.upg.type[player.cultType][id].bought(), 'bought-upgrade-but': DATA.upg.type[player.cultType][id].bought(), cant: (!canAffordTypeUpgrade(id))&&(!DATA.upg.type[player.cultType][id].bought()), can: canAffordTypeUpgrade(id)&&(!DATA.upg.type[player.cultType][id].bought()) }">
+                <h4 v-html="DATA.upg.type[player.cultType][id].title"></h4>
+				<div v-if="!DATA.upg.type[player.cultType][id].bought()">
+					<span v-html="DATA.upg.type[player.cultType][id].desc"></span><br>
+					<span>Requires {{ formatWhole(DATA.upg.type[player.cultType][id].requirement.amount) }} {{ DATA.upg.type[player.cultType][id].requirement.resource }}</span><br>
+					<span>Costs {{ formatWhole(DATA.upg.type[player.cultType][id].cost()) }} worship</span>
 				</div>
 				<div v-else>
-					<span v-html="DATA.upg[tier][tenet][id].shortDesc"></span>
+					<span v-html="DATA.upg.type[player.cultType][id].shortDesc"></span>
+				</div>
+			</button>
+		</div>
+		`
+	})
+
+    Vue.component('cult-upgrade-buttons', {
+		props: ['id'],
+		template: `
+		<div v-if="DATA.upg.cult[id].show()">
+			<div style="display: flex; justify-content: center; margin: 0 auto;">
+				<div style="flex: 1; margin-right: 5px; max-width: 250px;">
+					<button v-on:click="player.branches[player.activeBranch].buyCultUpgrade(id, 'left')" :id="'cult-upg-button-' + id + '-left'" v-bind:class="{ 'upgrade-but': !player.branches[player.activeBranch].hasCultUpgrade(id, 'left'), 'bought-upgrade-but': player.branches[player.activeBranch].hasCultUpgrade(id, 'left'), 'locked-upgrade-but': player.branches[player.activeBranch].hasCultUpgrade(id, 'right'), cant: (!player.branches[player.activeBranch].canAffordCultUpgrade(id))&&(!player.branches[player.activeBranch].hasCultUpgrade(id, 'left')), can: player.branches[player.activeBranch].canAffordCultUpgrade(id) }">
+						<h4 v-bind:style="[player.branches[player.activeBranch].hasCultUpgrade(id, 'right') ? {'text-decoration': 'line-through', 'text-decoration-thickness': '2px'} : {'text-decoration': 'none'}]" v-html="DATA.upg.cult[id].left.title"></h4>
+						<div v-if="!player.branches[player.activeBranch].hasCultUpgradeTier(id)">
+							<span v-html="DATA.upg.cult[id].left.desc"></span><br>
+							<span>Requires {{ formatWhole(DATA.upg.cult[id].requirement.amount) }} {{ DATA.upg.cult[id].requirement.resource }}</span><br>
+							<span>Costs {{ formatWhole(DATA.upg.cult[id].cost()) }} worship</span>
+						</div>
+						<div v-else>
+							<span v-bind:style="[player.branches[player.activeBranch].hasCultUpgrade(id, 'right') ? {'text-decoration': 'line-through'} : {'text-decoration': 'none'}]" v-html="DATA.upg.cult[id].left.shortDesc"></span>
+						</div>
+					</button>
+				</div>
+				<div style="flex: 1; margin-left: 5px; max-width: 250px;">
+					<button v-on:click="player.branches[player.activeBranch].buyCultUpgrade(id, 'right')" :id="'cult-upg-button-' + id + '-right'" v-bind:class="{ 'upgrade-but': !player.branches[player.activeBranch].hasCultUpgrade(id, 'right'), 'bought-upgrade-but': player.branches[player.activeBranch].hasCultUpgrade(id, 'right'), 'locked-upgrade-but': player.branches[player.activeBranch].hasCultUpgrade(id, 'left'), cant: (!player.branches[player.activeBranch].canAffordCultUpgrade(id))&&(!player.branches[player.activeBranch].hasCultUpgrade(id, 'right')), can: player.branches[player.activeBranch].canAffordCultUpgrade(id) }">
+						<h4 v-bind:style="[player.branches[player.activeBranch].hasCultUpgrade(id, 'left') ? {'text-decoration': 'line-through', 'text-decoration-thickness': '2px'} : {'text-decoration': 'none'}]" v-html="DATA.upg.cult[id].right.title"></h4>
+						<div v-if="!player.branches[player.activeBranch].hasCultUpgradeTier(id)">
+							<span v-html="DATA.upg.cult[id].right.desc"></span><br>
+							<span>Requires {{ formatWhole(DATA.upg.cult[id].requirement.amount) }} {{ DATA.upg.cult[id].requirement.resource }}</span><br>
+							<span>Costs {{ formatWhole(DATA.upg.cult[id].cost()) }} worship</span>
+						</div>
+						<div v-else>
+							<span v-bind:style="[player.branches[player.activeBranch].hasCultUpgrade(id, 'left') ? {'text-decoration': 'line-through'} : {'text-decoration': 'none'}]" v-html="DATA.upg.cult[id].right.shortDesc"></span>
+						</div>
+					</button>
+				</div>
+			</div>
+		</div>
+		`
+	})
+
+    Vue.component('feat-button', {
+		props: ['id'],
+		template: `
+		<div v-if="DATA.upg.feat[id].show()">
+			<button v-on:click="buyFeat(id)" :id="'feat-button-' + id" v-bind:class="{ 'upgrade-but': !DATA.upg.feat[id].bought(), 'bought-upgrade-but': DATA.upg.feat[id].bought(), cant: (!canAffordFeat(id))&&(!DATA.upg.feat[id].bought()), can: canAffordFeat(id)&&(!DATA.upg.feat[id].bought()) }">
+                <h4 v-html="DATA.upg.feat[id].title"></h4>
+				<div v-if="!DATA.upg.feat[id].bought()">
+					<span v-html="DATA.upg.feat[id].desc"></span><br>
+					<span>Costs {{ formatWhole(DATA.upg.feat[id].cost()) }} worship</span>
+				</div>
+				<div v-else>
+					<span v-html="DATA.upg.feat[id].shortDesc"></span>
 				</div>
 			</button>
 		</div>
@@ -131,9 +197,13 @@ function loadVue() {
             canCastMiracle,
             miracleClick,
             advancePopup,
-			hasUpgrade,
-			buyUpgrade,
-			canAffordUpgrade,
+			hasTypeUpgrade,
+			buyTypeUpgrade,
+			canAffordTypeUpgrade,
+			canBranch,
+			showBranch,
+			newBranch,
+			selectedBranch: player.activeBranch,
 		},
 	})
 

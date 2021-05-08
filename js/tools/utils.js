@@ -162,36 +162,121 @@ function addFactorial(num) {
 //player data functions
 function getFollowers() {
 	if (player.isCult) {
-		return player.followers;
+		let f = new Decimal(0);
+		for (let i=0; i<player.branches.length; i++) {
+			f = f.plus(player.branches[i].getFollowers());
+		}
+		return f;
 	} else {
-		return player.followers;
+		return player.branches[0].getFollowers();
 	}
 }
 
 function followersPerSec() {
-	return player.baseFollowerProd;
+	if (player.isCult) {
+		let f = new Decimal(0);
+		for (let i=0; i<player.branches.length; i++) {
+			f = f.plus(player.branches[i].followersPerSec());
+		}
+		return f;
+	} else {
+		return player.branches[0].followersPerSec();
+	}
 }
 
 function worshipPerSec() {
-	let w = player.baseWorshipProd;
-	let fBoost = new Decimal(player.followers.log10()-1);
-	if (player.cultType=='Proselyte' && fBoost.gte(1)) { fBoost = fBoost.sqrt(); }
-	else if (player.cultType=='Proselyte') { fBoost = fBoost.pow(2); }
-	if (hasUpgrade('cult', 'Proselyte', 1)) { fBoost = fBoost.times(upgradeEffect('cult', 'Proselyte', 1)); }
-	w = w.plus(fBoost);
-	if (hasUpgrade('cult', 'Clandestine', 1)) { w = w.times(upgradeEffect('cult', 'Clandestine', 1)); }
-	return w;
+	if (player.isCult) {
+		let w = new Decimal(0);
+		for (let i=0; i<player.branches.length; i++) {
+			w = w.plus(player.branches[i].worshipPerSec());
+		}
+		return w;
+	} else {
+		return player.branches[0].worshipPerSec();
+	}
 }
 
 function miracleCost() {
-	return player.lastMiracleCost.plus(Decimal.floor(Decimal.sqrt(player.totalMiracles)));
+	let c = player.lastMiracleCost.plus(Decimal.floor(Decimal.sqrt(player.totalMiracles)));
+	if (player.branches[player.activeBranch].hasCultUpgrade(1, 'right')) { c = c.times(player.branches[player.activeBranch].cultUpgradeEffect(1, 'right')) }
+	return c;
 }
 
 function miracleGain() {
-	if (player.isCult) {
-		return player.baseMiracleGain;
-	} else {
-		return player.baseMiracleGain;
+	let g = player.baseMiracleGain;
+	if (hasFeat(1)) { g = g.times(featEffect(1)); }
+	return g;
+}
+
+class Branch {
+	constructor(nextID, startFollowers, upgs=[{bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}, {bought: false, side: ''}]) {
+		this.id = nextID;
+		this.followers = Decimal.floor(startFollowers);
+		this.realFollowers = startFollowers;
+		this.cultUpgrades = [
+			{ bought: upgs[0].bought, side: upgs[0].side }, 
+			{ bought: upgs[1].bought, side: upgs[1].side },
+			{ bought: upgs[2].bought, side: upgs[2].side },
+			{ bought: upgs[3].bought, side: upgs[3].side },
+			{ bought: upgs[4].bought, side: upgs[4].side },
+			{ bought: upgs[5].bought, side: upgs[5].side },
+			{ bought: upgs[6].bought, side: upgs[6].side },
+			{ bought: upgs[7].bought, side: upgs[7].side },
+		];
+
+		this.updateFollowers = function() {
+			this.followers = Decimal.floor(this.realFollowers);
+		};
+
+		this.getFollowers = function() {
+			return this.followers;
+		};
+
+		this.addFollowers = function(val) {
+			this.realFollowers = this.realFollowers.plus(val);
+		};
+
+		this.followersPerSec = function() {
+			let f = player.baseFollowerProd;
+			if (this.hasCultUpgrade(1, 'left')) { f = f.plus(this.cultUpgradeEffect(1, 'left')); }
+			return f;
+		};
+		
+		this.worshipPerSec = function() {
+			let w = player.baseWorshipProd;
+			let fBoost = new Decimal(this.followers.log10()-1);
+			if (player.cultType=='Proselyte' && fBoost.gte(1)) { fBoost = fBoost.sqrt(); }
+			else if (player.cultType=='Proselyte') { fBoost = fBoost.pow(2); }
+			if (hasTypeUpgrade(1)&&(player.cultType=='Proselyte')) { fBoost = fBoost.times(typeUpgradeEffect(1)); }
+			w = w.plus(fBoost);
+			if (hasTypeUpgrade(1)&&(player.cultType=='Clandestine')) { w = w.times(typeUpgradeEffect(1)); }
+			return w;
+		};
+
+		this.canAffordCultUpgrade = function(id) {
+			return (player.worship.gte(DATA.upg.cult[id].cost())&&(!this.hasCultUpgradeTier(id))&&DATA.upg.cult[id].requirement.isMet());
+		};
+		
+		this.buyCultUpgrade = function(id, side) {
+			if (this.canAffordCultUpgrade(id)) {
+				player.worship = player.worship.minus(DATA.upg.cult[id].cost());
+				this.cultUpgrades[id-1].bought = true;
+				this.cultUpgrades[id-1].side = side;
+				DATA.upg.cult[id][side].onBuy();
+			}
+		};
+
+		this.hasCultUpgradeTier = function(id) {
+			return this.cultUpgrades[id-1].bought;
+		};
+		
+		this.hasCultUpgrade = function(id, side) {
+			return (this.cultUpgrades[id-1].side==side)&&this.cultUpgrades[id-1].bought;
+		};
+		
+		this.cultUpgradeEffect = function(id, side) {
+			return DATA.upg.cult[id][side].effect(this.id);
+		};
 	}
 }
 

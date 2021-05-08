@@ -26,6 +26,10 @@ function loadGame() {
     }
     fixData(player, START_PLAYER); 
     miracleTimer = new Timer(function() {}, 0);
+    if (player.branches.length==0) {
+        player.branches.push(new Branch(0, new Decimal(0)));
+        player.activeBranch = 0;
+    }
 
     loadVue();
 }
@@ -59,14 +63,17 @@ function startInterval() {
 
 function gameLoop() {
     player.timeLeft = miracleTimer.getTimeLeft();
+    player.activeBranch = app.selectedBranch;
+    var currentUpdate = new Date().getTime();
+    var diff = new Decimal(currentUpdate - player.lastUpdate); 
 
-    if (player.isCult) {
-        var currentUpdate = new Date().getTime();
-        diff = new Decimal(currentUpdate - player.lastUpdate); 
-        player.realFollowers = player.realFollowers.plus(followersPerSec().times(diff.div(1000)));
-        player.worship = player.worship.plus(worshipPerSec().times(diff.div(1000)));
+    for (let i=0; i<player.branches.length; i++) {
+        if (player.isCult) {
+            player.branches[i].addFollowers(player.branches[i].followersPerSec().times(diff.div(1000)));
+            player.worship = player.worship.plus(player.branches[i].worshipPerSec().times(diff.div(1000)));
+        }
+        player.branches[i].updateFollowers();
     }
-    player.followers = Decimal.floor(player.realFollowers);
 
     if ((currentUpdate-player.lastAutoSave)>10000) { 
         player.lastAutoSave = currentUpdate;
@@ -83,10 +90,11 @@ function miracleClick() {
 }
 
 function castMiracle() {
-    player.realFollowers = player.realFollowers.plus(miracleGain());
+    player.branches[player.activeBranch].addFollowers(miracleGain());
     if (player.isCult) {
         player.worship = player.worship.minus(miracleCost());
-        player.lastMiracleCost = new Decimal(miracleCost());
+        if (player.branches[player.activeBranch].hasCultUpgrade(1, 'right')) { player.lastMiracleCost = new Decimal(miracleCost().div(player.branches[player.activeBranch].cultUpgradeEffect(1, 'right'))); }
+        else { player.lastMiracleCost = new Decimal(miracleCost()); }
         player.totalMiracles++;
     } else {
         player.miracleOnCooldown = true;
@@ -122,24 +130,65 @@ function advancePopup(title1, title2, desc1, desc2, meta1, meta2, advID) {
 
 //upgrades
 
-function canAffordUpgrade(tier, tenet, id) {
-    return (player.worship.gte(DATA.upg[tier][tenet][id].cost())&&!hasUpgrade(tier, tenet, id));
+function canAffordTypeUpgrade(id) {
+    return (player.worship.gte(DATA.upg.type[player.cultType][id].cost())&&(!hasTypeUpgrade(id))&&DATA.upg.type[player.cultType][id].requirement.isMet());
 }
 
-function buyUpgrade(tier, tenet, id) {
-    if (player.worship.gte(DATA.upg[tier][tenet][id].cost())) {
-        player.worship = player.worship.minus(DATA.upg[tier][tenet][id].cost());
-        player.upgrades[tier][tenet][id] = true;
-        DATA.upg[tier][tenet][id].onBuy();
+function buyTypeUpgrade(id) {
+    if (canAffordTypeUpgrade(id)) {
+        player.worship = player.worship.minus(DATA.upg.type[player.cultType][id].cost());
+        player.typeUpgrades[id-1] = true;
+        DATA.upg.type[player.cultType][id].onBuy();
     }
 }
 
-function hasUpgrade(tier, tenet, id) {
-    return DATA.upg[tier][tenet][id].bought();
+function hasTypeUpgrade(id) {
+    return DATA.upg.type[player.cultType][id].bought();
 }
 
-function upgradeEffect(tier, tenet, id) {
-    return DATA.upg[tier][tenet][id].effect();
+function typeUpgradeEffect(id) {
+    return DATA.upg.type[player.cultType][id].effect();
+}
+
+function canAffordFeat(id) {
+    return player.worship.gte(DATA.upg.feat[id].cost())&&!hasFeat(id);
+}
+
+function buyFeat(id) {
+    if (canAffordFeat(id)) {
+        player.worship = player.worship.minus(DATA.upg.feat[id].cost());
+        player.feats[id-1] = true;
+        DATA.upg.feat[id].onBuy();
+    }
+}
+
+function hasFeat(id) {
+    return DATA.upg.feat[id].bought();
+}
+
+function featEffect(id) {
+    return DATA.upg.feat[id].effect();
+}
+
+function canBranch() {
+    return getFollowers().gte(Decimal.pow(100, player.branches.length-1).times(1000));
+}
+
+function showBranch() {
+    return getFollowers().gte(Decimal.pow(100, player.branches.length-1).times(1000).times(0.8));
+}
+
+function getBranchReq() {
+    return Decimal.pow(100, player.branches.length-1).times(1000);
+}
+
+function newBranch() {
+    if (canBranch()) {
+        let ind = player.branches.length;
+        player.branches.push(new Branch(ind, new Decimal(10)));
+        app.selectedBranch = ind;
+        player.activeBranch = ind;
+    }
 }
 
 //fixes and data manipulation
@@ -160,7 +209,13 @@ function copyData(data, start) {
             }
         } else if (Array.isArray(start[item])) {
             data[item] = [];
-            copyData(data[item], start[item]);
+            if (item=='branches' && start[item].length>0) {
+                for (let i=0; i<start[item].length; i++) {
+                    data[item][i] = new Branch(i, new Decimal(start[item][i].realFollowers), start[item][i].cultUpgrades);
+                }
+            } else {
+                copyData(data[item], start[item]);
+            }
         } else if (start[item] instanceof Decimal) {
             data[item] = new Decimal(start[item]);
         } else if (start[item] instanceof Date) {
@@ -185,7 +240,13 @@ function fixData(data, start) {
             if (data[item] === undefined) {
                 data[item] = [];
             }
-            fixData(data[item], start[item]);
+            if (item=='branches' && start[item].length>0) {
+                for (let i=0; i<start[item].length; i++) {
+                    data[item][i] = new Branch(i, new Decimal(start[item][i].realFollowers), start[item][i].cultUpgrades);
+                }
+            } else {
+                fixData(data[item], start[item]);
+            }
         } else if (start[item] instanceof Decimal) {
             if (data[item] === undefined) {
                 data[item] = new Decimal(start[item]);

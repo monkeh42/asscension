@@ -19,10 +19,17 @@
     <div id="app">
         <div id="header">
             <div id="resource-display">
-                <table id="resource-table" style="width: 100%;">
+                <table id="totals-resource-table" style="width: 100%;">
+                    <tr v-if="player.isCult && player.branches.length>1">
+                        <td colspan="2">
+                            <div style="text-align: center;">
+                                <h4>Totals</h4>
+                            </div>
+                        </td>
+                    </tr>
                     <tr>
                         <td>
-                            Followers: 
+                            Followers:
                         </td>
                         <td>
                             {{ formatWhole(getFollowers()) }}
@@ -38,7 +45,7 @@
                     </tr>
                     <tr v-if="player.isCult">
                         <td>
-                            Follower recruitment: 
+                            Follower recruitment<span v-if="player.branches.length>1"> (total)</span>: 
                         </td>
                         <td>
                             {{ formatDefault(followersPerSec()) }}/sec
@@ -46,7 +53,7 @@
                     </tr>
                     <tr v-if="player.isCult">
                         <td>
-                            Worship generation: 
+                            Worship generation<span v-if="player.branches.length>1"> (total)</span>: 
                         </td>
                         <td>
                             {{ formatDefault(worshipPerSec()) }}/sec
@@ -55,23 +62,76 @@
                 </table>
             </div>
             <div id="main-controls">
-                <button class="option-but" v-on:click="hardReset()">
-                    Hard Reset
-                </button>
+                <table v-if="player.isCult && player.branches.length>1" id="branch-resource-table" style="width: 100%;">
+                    <tr>
+                        <td colspan="2">
+                            <div style="text-align: center;">
+                                <h4>This Branch</h4>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Followers:
+                        </td>
+                        <td>
+                            {{ formatWhole(player.branches[player.activeBranch].getFollowers()) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Follower recruitment: 
+                        </td>
+                        <td>
+                            {{ formatDefault(player.branches[player.activeBranch].followersPerSec()) }}/sec
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Worship generation: 
+                        </td>
+                        <td>
+                            {{ formatDefault(player.branches[player.activeBranch].worshipPerSec()) }}/sec
+                        </td>
+                    </tr>
+                </table>
+                <div style="text-align: center;">
+                    <h4>Select Branch:</h4>
+                    <select class="branch-dropdown" v-if="player.isCult && player.branches.length>1" v-model="selectedBranch">
+                        <option v-for="i in player.branches.length" :value="i-1" v-html="i"></option>
+                    </select>
+                </div>
             </div>
             <div id="miracle-controls">
                 <miracle-button></miracle-button>
                 <advance-button data="cult"></advance-button>
+                <branch-button></branch-button>
+                <button class="option-but" v-on:click="hardReset()" style="position: absolute; bottom: 0; left: 0;">
+                    Hard Reset
+                </button>
             </div>
         </div>
         <div id="upgrades">
-            <div v-if="player.isCult" id="cult-upgrades">
-                <h3>Cult Upgrades</h3>
-            </div>
-            <div v-if="player.isCult" id="cult-tenet-upgrades">
+            <div v-if="player.isCult" id="type-upgrades">
                 <h3>{{ player.cultType }} Upgrades</h3>
-                <upgrade-button tier="cult" tenet="Clandestine" :id="parseInt(1)"></upgrade-button>
-                <upgrade-button tier="cult" tenet="Proselyte" :id="parseInt(1)"></upgrade-button>
+                <type-upgrade-button :id="1"></type-upgrade-button>
+                <type-upgrade-button :id="2"></type-upgrade-button>
+                <type-upgrade-button :id="3"></type-upgrade-button>
+                <type-upgrade-button :id="4"></type-upgrade-button>
+            </div>
+            <div v-if="player.isCult" id="feat-upgrades">
+                <h3>Godly Feats</h3>
+                <feat-button :id="1"></feat-button>
+                <feat-button :id="2"></feat-button>
+                <feat-button :id="3"></feat-button>
+                <feat-button :id="4"></feat-button>
+            </div>
+            <div v-if="player.isCult && player.branches.length>1" id="cult-upgrades">
+                <h3>Cult Upgrades</h3>
+                <cult-upgrade-buttons :id="1"></cult-upgrade-buttons>
+                <cult-upgrade-buttons :id="2"></cult-upgrade-buttons>
+                <cult-upgrade-buttons :id="3"></cult-upgrade-buttons>
+                <cult-upgrade-buttons :id="4"></cult-upgrade-buttons>
             </div>
         </div>
         <adv-choice-popup ref="advpop"></adv-choice-popup>

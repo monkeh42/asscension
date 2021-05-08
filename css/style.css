@@ -18,8 +18,12 @@ h4 {
     font-size: 14pt;
 }
 
+#header {
+    margin-top: 15px;
+}
+
 #resource-display {
-    height: 200px;
+    height: 250px;
     width: 300px;
     border: 1px solid white;
     text-align: left;
@@ -27,18 +31,38 @@ h4 {
 }
 
 #miracle-controls {
-    height: 200px;
+    height: 250px;
     width: 300px;
     border: 1px solid white;
     margin: auto;
     text-align: center;
+    position: relative;
 }
 
 #main-controls {
-    height: 200px;
+    height: 250px;
     width: 300px;
     border: 1px solid white;
     float: right;
+}
+
+.branch-dropdown {
+    display: inline-block;
+    background-color: #95dffc;
+    border: 1px solid white;
+    text-align-last: center;
+    font-family: 'Nova Script', cursive;
+    font-size: 14pt;
+    width: 50px;
+    height: 25px;
+}
+
+.branch-dropdown:focus {
+    outline: none;
+}
+
+.branch-dropdown > option {
+    text-align-last: center;
 }
 
 #miracle-but {
@@ -59,7 +83,7 @@ h4 {
     background-color: #eeff55;
 }
 
-.advance-but {
+.advance-but, .branch-but {
     width: 250px;
     height: 75px;
     border-radius: 4px;
@@ -67,13 +91,13 @@ h4 {
     margin: 5px;
 }
 
-.advance-but.can {
+.advance-but.can, .branch-but.can {
     border: 1px solid #e93eff;
     background-color: #bf00c5;
     cursor: pointer;
 }
 
-.advance-but.can:hover {
+.advance-but.can:hover, .branch-but.can:hover {
     background-color: #e93eff;
 }
 
@@ -135,6 +159,17 @@ h4 {
     margin: 5px;
 }
 
+.locked-upgrade-but {
+    width: 250px;
+    height: 75px;
+    background-color: #707070;
+    border: 1px solid #707070;
+    cursor: default;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 5px;
+}
+
 .option-but {
     width: 100px;
     height: 25px;
@@ -151,16 +186,22 @@ h4 {
     background-color: #525252;
 }
 
-#cult-tenet-upgrades {
+#type-upgrades {
     text-align: center;
-    float: right;
-    width: 50%;
+    float: left;
+    width: 300px;
 }
 
 #cult-upgrades {
     text-align: center;
+    float: right;
+    width: 600px;
+}
+
+#feat-upgrades {
+    text-align: center;
+    width: 300px;
     float: left;
-    width: 50%;
 }
 
 .cant {
