@@ -160,6 +160,14 @@ function addFactorial(num) {
 }
 
 //player data functions
+function goldPerSec() {
+	if (!player.genGold) { return new Decimal(0); }
+	else {
+		let g = new Decimal(getFollowers().log10()/10);
+		return g.pow(player.goldExp);
+	}
+}
+
 function getFollowers() {
 	if (player.isCult) {
 		let f = new Decimal(0);
@@ -205,6 +213,7 @@ function miracleCost() {
 function miracleGain() {
 	let g = player.baseMiracleGain;
 	if (hasFeat(1)) { g = g.times(featEffect(1)); }
+	if (player.branches[player.activeBranch].hasCultUpgrade(2, 'right')) { g = g.times(player.branches[player.activeBranch].cultUpgradeEffect(2, 'right')); }
 	return g;
 }
 
@@ -239,6 +248,7 @@ class Branch {
 		this.followersPerSec = function() {
 			let f = player.baseFollowerProd;
 			if (this.hasCultUpgrade(1, 'left')) { f = f.plus(this.cultUpgradeEffect(1, 'left')); }
+			if (this.hasCultUpgrade(2, 'left')) { f = f.times(this.cultUpgradeEffect(2, 'left')); }
 			return f;
 		};
 		
@@ -254,7 +264,7 @@ class Branch {
 		};
 
 		this.canAffordCultUpgrade = function(id) {
-			return (player.worship.gte(DATA.upg.cult[id].cost())&&(!this.hasCultUpgradeTier(id))&&DATA.upg.cult[id].requirement.isMet());
+			return (player.worship.gte(DATA.upg.cult[id].cost())&&(!this.hasCultUpgradeTier(id))&&DATA.upg.cult[id].requirement.isMet(this.id));
 		};
 		
 		this.buyCultUpgrade = function(id, side) {

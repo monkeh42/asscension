@@ -9,6 +9,10 @@
     <script type="text/javascript" src="js/tools/components.js"></script>
     <script type="text/javascript" src="js/tools/break_infinity.js"></script>
     <script type="text/javascript" src="js/tools/data_objects.js"></script>
+    <script type="text/javascript" src="js/tools/markov.js"></script>
+    <script type="text/javascript" src="js/hex-tools/Grid.js"></script>
+    <script type="text/javascript" src="js/hex-tools/HexCalcs.js"></script>
+    <script type="text/javascript" src="js/hex-tools/HexagonTools.js"></script>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -18,7 +22,7 @@
 <body onload="init()">
     <div id="app">
         <div id="header">
-            <div id="resource-display">
+            <div id="totals-display">
                 <table id="totals-resource-table" style="width: 100%;">
                     <tr v-if="player.isCult && player.branches.length>1">
                         <td colspan="2">
@@ -43,9 +47,17 @@
                             {{ formatDefault(player.worship) }}
                         </td>
                     </tr>
+                    <tr v-if="player.genGold">
+                        <td>
+                            Gold: 
+                        </td>
+                        <td>
+                            {{ formatDefault(player.gold) }}
+                        </td>
+                    </tr>
                     <tr v-if="player.isCult">
                         <td>
-                            Follower recruitment<span v-if="player.branches.length>1"> (total)</span>: 
+                            Follower recruitment: 
                         </td>
                         <td>
                             {{ formatDefault(followersPerSec()) }}/sec
@@ -53,15 +65,23 @@
                     </tr>
                     <tr v-if="player.isCult">
                         <td>
-                            Worship generation<span v-if="player.branches.length>1"> (total)</span>: 
+                            Worship generation: 
                         </td>
                         <td>
                             {{ formatDefault(worshipPerSec()) }}/sec
                         </td>
                     </tr>
+                    <tr v-if="player.genGold">
+                        <td>
+                            Gold production: 
+                        </td>
+                        <td>
+                            {{ formatDefault(goldPerSec()) }}/sec
+                        </td>
+                    </tr>
                 </table>
             </div>
-            <div id="main-controls">
+            <div id="branch-display">
                 <table v-if="player.isCult && player.branches.length>1" id="branch-resource-table" style="width: 100%;">
                     <tr>
                         <td colspan="2">
@@ -104,8 +124,12 @@
             </div>
             <div id="miracle-controls">
                 <miracle-button></miracle-button>
+                <div v-if="player.isCult" class="miracle-count">Total miracles cast: {{ formatWhole(player.totalMiracles) }}</div>
                 <advance-button data="cult"></advance-button>
                 <branch-button></branch-button>
+                <div v-if="player.displayMap">
+                    <button onclick="showHideMap()" class="option-but">World Map</button>
+                </div>
                 <div v-if="autosaveNotify" class="save-notify">Autosaved!</div>
                 <div v-if="manSaveNotify" class="save-notify">Saved!</div>
                 <button class="option-but" v-on:click="hardReset()" style="position: absolute; bottom: 0; left: 0;">
@@ -134,13 +158,18 @@
                 <feat-button :id="3"></feat-button>
                 <feat-button :id="4"></feat-button>
             </div>
-            <div v-if="player.isCult && player.branches.length>1" id="cult-upgrades">
-                <h3>Cult Upgrades</h3>
-                <cult-upgrade-buttons :id="1"></cult-upgrade-buttons>
-                <cult-upgrade-buttons :id="2"></cult-upgrade-buttons>
-                <cult-upgrade-buttons :id="3"></cult-upgrade-buttons>
-                <cult-upgrade-buttons :id="4"></cult-upgrade-buttons>
+            <cult-upgrades></cult-upgrades>
+        </div>
+        <div class="world-popup">
+            <div id="canvas-container" class="tooltip">
+                <canvas id="hexCanvas" width="800" height="600">
+                    
+                </canvas>
+                <!--<div v-if="player.displayMap && !player.displayFullMap" id="home-tooltip"></div>-->
+                <div id="canvas-tooltip" class="tooltiptext"></div>
             </div>
+            <br>
+            <button onclick="showHideMap()" class="option-but" style="margin: 25px;">Close</button>
         </div>
         <adv-choice-popup ref="advpop"></adv-choice-popup>
     </div>

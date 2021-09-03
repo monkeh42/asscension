@@ -2,6 +2,7 @@ var START_PLAYER = {
     realFollowers: new Decimal(0),
     followers: new Decimal(0),
     worship: new Decimal(0),
+    gold: new Decimal(0),
 
     timeLeft: 0,
     miracleOnCooldown: false,
@@ -9,17 +10,29 @@ var START_PLAYER = {
     lastMiracleCost: new Decimal(10),
     baseMiracleGain: new Decimal(1),
     totalMiracles: 0,
+    miracleLevel: 1,
+    canAutocast: false,
+    autocastOn: false,
 
     isCult: false,
     cultType: 'none',
     baseFollowerProd: new Decimal(0),
     baseWorshipProd: new Decimal(0),
 
+    genGold: false,
+    goldExp: 1,
+
     lastUpdate: new Date(),
     lastAutoSave: new Date(),
+    lastAutoCast: new Date(),
 
     branches: [],
     activeBranch: 0,
+
+    displayMap: false,
+    displayFullMap: false,
+    homeCountryID: -1,
+    homeCountryName: '',
 
     typeUpgrades: [false, false, false, false, false, false, false, false],
     feats: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
@@ -39,10 +52,13 @@ var ADVANCEMENTS = {
             onChoose: function() {
                 app.$refs['advpop'].isActivePop = false;
                 player.isCult = true;
+                player.displayMap = true;
                 player.cultType = 'Clandestine';
                 player.baseFollowerProd = new Decimal(0.2);
                 player.baseWorshipProd = new Decimal(1);
                 player.baseMiracleGain = new Decimal(10);
+                player.miracleLevel++;
+                setTimeout(setupMap, 50);
             }
         },
         optTwo: {
@@ -53,10 +69,12 @@ var ADVANCEMENTS = {
             onChoose: function() {
                 app.$refs['advpop'].isActivePop = false;
                 player.isCult = true;
+                player.displayMap = true;
                 player.cultType = 'Proselyte';
                 player.baseFollowerProd = new Decimal(1);
                 player.baseWorshipProd = new Decimal(0.5);
                 player.baseMiracleGain = new Decimal(10);
+                setTimeout(setupMap, 50);
             }
         },
     },
@@ -71,6 +89,7 @@ var UPGRADES = {
                 title: 'Dogma of Hell',
                 desc: 'Instill an existential fear of hell in your followers, doubling the boost to worship generation based on followers.',
                 shortDesc: 'Worship boost from followers x2',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal(50);
                 },
@@ -100,6 +119,7 @@ var UPGRADES = {
                 title: 'Dogma of nothing',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -129,6 +149,7 @@ var UPGRADES = {
                 title: 'Dogma of being too cool for school',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -158,6 +179,7 @@ var UPGRADES = {
                 title: 'Dogma of farts',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -189,6 +211,7 @@ var UPGRADES = {
                 title: 'Initiation Ritual',
                 desc: 'New followers are more devoted, doubling worship generation.',
                 shortDesc: 'Worship generation x2',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal(100);
                 },
@@ -218,6 +241,7 @@ var UPGRADES = {
                 title: 'funny Ritual',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -247,6 +271,7 @@ var UPGRADES = {
                 title: 'stupid Ritual',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -276,6 +301,7 @@ var UPGRADES = {
                 title: 'sexy Ritual',
                 desc: 'does something',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -309,8 +335,8 @@ var UPGRADES = {
             requirement: {
                 amount: new Decimal(500),
                 resource: 'branch followers',
-                isMet: function() {
-                    return getFollowers().gte(this.amount);
+                isMet: function(branchID) {
+                    return player.branches[branchID].getFollowers().gte(this.amount);
                 }
             },
             show: function() {
@@ -322,14 +348,15 @@ var UPGRADES = {
                 title: 'Ministry',
                 desc: 'Boost follower recruitment in this branch based on amount of branch followers.',
                 shortDesc: 'Followers boost follower gain',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal(2500);
                 },
                 requirement: {
                     amount: new Decimal(500),
                     resource: 'branch followers',
-                    isMet: function() {
-                        return getFollowers().gte(this.amount);
+                    isMet: function(branchID) {
+                        return player.branches[branchID].getFollowers().gte(this.amount);
                     }
                 },
                 show: function() {
@@ -349,14 +376,15 @@ var UPGRADES = {
                 title: 'Empowered Clergy',
                 desc: 'Reduces the cost of miracles cast on this branch by 25%.',
                 shortDesc: 'Miracle cost -25%',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal(2500);
                 },
                 requirement: {
                     amount: new Decimal(500),
                     resource: 'branch followers',
-                    isMet: function() {
-                        return getFollowers().gte(this.amount);
+                    isMet: function(branchID) {
+                        return player.branches[branchID].getFollowers().gte(this.amount);
                     }
                 },
                 show: function() {
@@ -372,13 +400,13 @@ var UPGRADES = {
         },
         2: {
             cost: function() {
-                return new Decimal("Infinity");
+                return new Decimal(5000);
             },
             requirement: {
-                amount: new Decimal("Infinity"),
+                amount: new Decimal(1000),
                 resource: 'branch followers',
-                isMet: function() {
-                    return false;//getFollowers().gte(this.amount);
+                isMet: function(branchID) {
+                    return player.branches[branchID].getFollowers().gte(this.amount);
                 }
             },
             show: function() {
@@ -387,24 +415,25 @@ var UPGRADES = {
             left: {
                 id: 2,
                 side: 'left',
-                title: 'left',
-                desc: 'does something.',
-                shortDesc: '',
+                title: 'Pilgrimage',
+                desc: 'Multiply follower recruitment in this branch by the number of branches.',
+                shortDesc: 'Follower gain x[branches]',
+                hasEnabled: false,
                 cost: function() {
-                    return new Decimal("Infinity");
+                    return new Decimal(5000);
                 },
                 requirement: {
-                    amount: new Decimal("Infinity"),
+                    amount: new Decimal(1000),
                     resource: 'branch followers',
-                    isMet: function() {
-                        return false;//getFollowers().gte(this.amount);
+                    isMet: function(branchID) {
+                        return player.branches[branchID].getFollowers().gte(this.amount);
                     }
                 },
                 show: function() {
                     return (player.isCult && player.branches.length>1);
                 },
                 effect: function(branchID) {
-                    return new Decimal(1);
+                    return new Decimal(player.branches.length);
                 },
                 onBuy: function() {
                     return;
@@ -413,24 +442,26 @@ var UPGRADES = {
             right: {
                 id: 2,
                 side: 'right',
-                title: 'right',
-                desc: 'does something.',
-                shortDesc: '',
+                title: 'Chronicles',
+                desc: 'Boost follower generation from miracles in this branch based on number of miracles cast.',
+                shortDesc: 'Total miracles boost miracle effect',
+                hasEnabled: false,
                 cost: function() {
-                    return new Decimal("Infinity");
+                    return new Decimal(5000);
                 },
                 requirement: {
-                    amount: new Decimal("Infinity"),
+                    amount: new Decimal(1000),
                     resource: 'branch followers',
-                    isMet: function() {
-                        return false;//getFollowers().gte(this.amount);
+                    isMet: function(branchID) {
+                        return player.branches[branchID].getFollowers().gte(this.amount);
                     }
                 },
                 show: function() {
                     return (player.isCult && player.branches.length>1);
                 },
                 effect: function(branchID) {
-                    return new Decimal(1);
+                    let e = new Decimal(player.totalMiracles);
+                    return e.sqrt();
                 },
                 onBuy: function() {
                     return;
@@ -457,6 +488,7 @@ var UPGRADES = {
                 title: 'left',
                 desc: 'does something.',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -483,6 +515,7 @@ var UPGRADES = {
                 title: 'right',
                 desc: 'does something.',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -524,6 +557,7 @@ var UPGRADES = {
                 title: 'left',
                 desc: 'does something.',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -550,6 +584,7 @@ var UPGRADES = {
                 title: 'right',
                 desc: 'does something.',
                 shortDesc: '',
+                hasEnabled: false,
                 cost: function() {
                     return new Decimal("Infinity");
                 },
@@ -578,6 +613,7 @@ var UPGRADES = {
             title: 'Anoint High Priest',
             desc: 'Your high priest interprets miracles, doubling their base follower gain.',
             shortDesc: 'Miracle follower gain x2',
+            hasEnabled: false,
             cost: function() {
                 return new Decimal(500);
             },
@@ -596,11 +632,12 @@ var UPGRADES = {
         },
         2: {
             id: 2,
-            title: 'create a sasquatch',
-            desc: 'does something',
-            shortDesc: '',
+            title: 'Imbue Holy Site',
+            desc: 'Upgrade to Major Miracles, and unlock miracle autocasting (once every 15 seconds, if able).',
+            shortDesc: 'Autocast enabled: ',
+            hasEnabled: true,
             cost: function() {
-                return new Decimal("Infinity");
+                return new Decimal(5000);
             },
             show: function() {
                 return player.isCult;
@@ -609,7 +646,9 @@ var UPGRADES = {
                 return new Decimal(1);
             },
             onBuy: function() {
-                return;
+                player.miracleLevel++;
+                player.canAutocast = true;
+                addAutocastListener();
             },
             bought: function() {
                 return player.feats[this.id-1];
@@ -617,11 +656,12 @@ var UPGRADES = {
         },
         3: {
             id: 3,
-            title: 'create the loch ness monster',
-            desc: 'does something',
+            title: 'A Certain Number Of Commandments',
+            desc: 'A basic dogmatic structure, including guidelines for offerings, of course. Begin producing gold (based on total followers).',
             shortDesc: '',
+            hasEnabled: false,
             cost: function() {
-                return new Decimal("Infinity");
+                return new Decimal(25000);
             },
             show: function() {
                 return player.isCult;
@@ -641,6 +681,7 @@ var UPGRADES = {
             title: 'make scientology real',
             desc: 'does something',
             shortDesc: '',
+            hasEnabled: false,
             cost: function() {
                 return new Decimal("Infinity");
             },

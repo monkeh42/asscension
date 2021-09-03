@@ -12,6 +12,21 @@ var autosaveNotify = false;
 
 var manSaveNotify = false;
 
+var HT = HT || {};
+
+var worldMap;
+
+var countries = {};
+
+var canvas;
+var ctx;
+var defaultCanvas;
+var mouseX;
+var mouseY;
+var hovered;
+
+var showWorldMap = false;
+
 function init() {
     loadGame();
 
@@ -28,7 +43,31 @@ function loadGame() {
         copyData(player, JSON.parse(window.atob(savePlayer)));
         if (Object.keys(player).length == 0) { copyData(player, START_PLAYER); }
     }
+    worldMap = new HT.Grid(800, 600);
+    var saveHexes = localStorage.getItem('aschexes');
+    if (saveHexes !== null && saveHexes !== undefined) {
+        if (JSON.parse(window.atob(saveHexes)) !== null) {
+            var tempHexes = [];
+            copyHexes(tempHexes, JSON.parse(window.atob(saveHexes)));
+            if (tempHexes.length > 0) {
+                worldMap.Hexes = [];
+                copyHexes(worldMap.Hexes, tempHexes);
+            }
+        }
+    }
+    var saveCountries = localStorage.getItem('asccountries');
+    if (saveCountries === null || saveCountries === undefined) {
+        worldMap.generateCountries();
+        worldMap.assignHomeCountry();
+    } else {
+        copyData(countries, JSON.parse(window.atob(saveCountries)));
+        if (Object.keys(countries).length == 0) {
+            worldMap.generateCountries();
+            worldMap.assignHomeCountry();
+        }
+    }
     fixData(player, START_PLAYER); 
+
     miracleTimer = new Timer(function() {}, 0);
     if (player.branches.length==0) {
         player.branches.push(new Branch(0, new Decimal(0)));
@@ -36,6 +75,18 @@ function loadGame() {
     }
 
     loadVue();
+    if (player.canAutocast) {
+        addAutocastListener();
+    }
+}
+
+function addAutocastListener() {
+    var autochk = document.getElementById('autocast-enabled-box');
+    autochk.addEventListener('click', function(e) {
+        console.log(e);
+        e.stopPropagation();
+        player.autocastOn = e.target.checked;
+    })
 }
 
 function addData(id, name, data) {
@@ -57,6 +108,8 @@ function manualSave() {
 
 function save() {
     localStorage.setItem('ascsave', window.btoa(JSON.stringify(player)));
+    localStorage.setItem('aschexes', window.btoa(JSON.stringify(worldMap.Hexes)));
+    localStorage.setItem('asccountries', window.btoa(JSON.stringify(countries)));
 }
 
 function importSave() {
@@ -84,9 +137,54 @@ function exportSave() {
 function startGame() {
     player.lastUpdate = new Date();
     player.lastAutoSave = new Date();
+    player.lastAutoCast = new Date();
+
+    canvas = document.getElementById("hexCanvas");
+    ctx = canvas.getContext('2d');
+    ctx.canvas.addEventListener('mousemove', handleMapMouseover);
+    canvas.addEventListener('mouseleave', handleMapMouseLeave);
+    setupMap(); 
+
     save();
 
     startInterval();
+}
+
+function setupMap() {
+    if (!player.displayFullMap) {
+        ctx.save();
+        //clipMap();
+        setupHomeTooltip();
+    } else {
+        ctx.restore();
+    }
+    
+    drawHexGrid(ctx);
+    defaultCanvas = ctx.getImageData(0,0,800,600);
+}
+
+function unclipMap() {
+    ctx.restore();
+    drawHexGrid(ctx);
+    defaultCanvas = ctx.getImageData(0,0,800,600);
+}
+
+function setupHomeTooltip() {
+    let ttSpan = document.getElementById('home-tooltip');
+    let coord = worldMap.getCountryCircleBound(player.homeCountryID);
+    ttSpan.style.top = (coord[1]-10)+'px';
+    ttSpan.style.left = (coord[0])+'px';
+    ttSpan.style.transform = 'translate(-50%, -100%)';
+    ttSpan.innerHTML = `<strong>${player.homeCountryName}</strong><br>Home Country`;
+}
+
+function clipMap() {
+    let c = worldMap.getCountryCircleBound(player.homeCountryID);
+    ctx.strokeStyle = "black";
+    ctx.beginPath();
+    ctx.arc(c[0], c[1], c[2], 0, 2* Math.PI);
+    ctx.stroke();
+    ctx.clip();
 }
 
 function startInterval() {
@@ -99,12 +197,25 @@ function gameLoop() {
     var currentUpdate = new Date().getTime();
     var diff = new Decimal(currentUpdate - player.lastUpdate); 
 
+    if (player.genGold) {
+        player.gold = player.gold.plus(goldPerSec().times(diff.div(1000)));
+    }
+
     for (let i=0; i<player.branches.length; i++) {
         if (player.isCult) {
             player.branches[i].addFollowers(player.branches[i].followersPerSec().times(diff.div(1000)));
             player.worship = player.worship.plus(player.branches[i].worshipPerSec().times(diff.div(1000)));
         }
         player.branches[i].updateFollowers();
+    }
+
+    if (player.canAutocast) {
+        if ((currentUpdate-player.lastAutoCast)>15000 && player.autocastOn) {
+            if (canCastMiracle()) {
+                player.lastAutoCast = currentUpdate;
+                castMiracle();
+            }
+        }
     }
 
     if ((currentUpdate-player.lastAutoSave)>10000) { 
@@ -115,6 +226,52 @@ function gameLoop() {
     }
 
     player.lastUpdate = currentUpdate;
+}
+
+//canvas
+
+function showHideMap() {
+    showWorldMap = !showWorldMap;
+}
+
+function copyHexes(newArray, oldArray) {
+    for (let i=0; i<oldArray.length; i++) {
+        newArray.push(new HT.Hexagon(oldArray[i].Id, oldArray[i].x, oldArray[i].y, oldArray[i].countryID, oldArray[i].countryName));
+    }
+}
+
+function handleMapMouseover(e) {
+    if (player.displayFullMap) {
+        var rect = canvas.getBoundingClientRect();
+        var ttSpan = document.getElementById('canvas-tooltip');
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+        ttSpan.style.top = (mouseY-10)+'px';
+        ttSpan.style.left = (mouseX)+'px';
+        ttSpan.style.transform = 'translate(-50%, -100%)';
+        let c = worldMap.findHoveredCountry(mouseX, mouseY);
+        if (c<0) { return; }
+        let name = countries[c].name;
+
+        if (c>0) {
+            if (c==player.homeCountryID) {
+                ttSpan.innerHTML = `<strong>${name}</strong><br>Home Country`;
+            } else {
+                ttSpan.innerHTML = `<strong>${name}</strong>`;
+            }
+            if (c!=hovered) {
+                ctx.putImageData(defaultCanvas, 0, 0);
+                drawSingleCountry(c, true, ctx);
+                hovered = c;
+            }
+        } else {
+            ttSpan.innerHTML = '';
+        }
+    }
+}
+
+function handleMapMouseLeave(e) {
+    if (player.displayFullMap) { ctx.putImageData(defaultCanvas, 0, 0); }
 }
 
 //miracle functions
@@ -230,6 +387,8 @@ function newBranch() {
 function hardReset() {
     if (confirm('This will reset ALL of your progress and can\'t be undone.')) {
         player = null;
+        worldMap.Hexes = null;
+        countries = null;
         save();
         window.location.reload(true);
     }

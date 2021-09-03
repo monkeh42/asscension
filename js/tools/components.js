@@ -36,12 +36,17 @@ function loadVue() {
 		props: [],
 		template: `
 		<div>
-			<button v-on:click="miracleClick()" id="miracle-but" v-bind:class="{ cant: !canCastMiracle(), can: canCastMiracle() }">
+			<div v-on:click="miracleClick()" id="miracle-but" v-bind:class="{ cant: !canCastMiracle(), can: canCastMiracle() }">
                 <h4 v-html="player.isCult ? 'Perform Minor Miracle' : 'Bestow Grace'"></h4>
-                <span>Gain <num-text :val="formatWhole(miracleGain())" :label="(player.isCult && player.branches.length>1) ? 'branch followers' : 'followers'"></num-text><br></span>
-                <span v-if="player.isCult">Costs {{ formatWhole(miracleCost()) }} worship<br></span>
-                <span v-if="player.miracleOnCooldown">Cooldown: {{ format(player.timeLeft/1000) }}s</span>
-			</button>
+				<div v-if="player.canAutocast" style="width: 30px; float: right; margin-right: 10px;">
+					<input type="checkbox" class="inline-chbox" id="autocast-enabled-box" name="autocast-enabled-box"><br><label for="autocast-enabled-box"><strong>auto</strong></label>
+				</div>
+				<div style="width: 155px; margin: auto;">
+					<span>Gain <num-text :val="formatWhole(miracleGain())" :label="(player.isCult && player.branches.length>1) ? 'branch followers' : 'followers'"></num-text><br></span>
+					<span v-if="player.isCult">Costs {{ formatWhole(miracleCost()) }} worship<br></span>
+					<span v-if="player.miracleOnCooldown">Cooldown: {{ format(player.timeLeft/1000) }}s</span>
+				</div>
+			</div>
 		</div>
 		`
 	})
@@ -164,6 +169,28 @@ function loadVue() {
 		`
 	})
 
+	Vue.component('cult-upgrades', {
+		props: [],
+		template: `
+		<div>
+			<div v-if="player.isCult && player.branches.length>1" id="cult-upgrades">
+				<h3>Cult Upgrades</h3>
+				<div style="position: relative;">
+					<div v-for="i in player.branches.length">
+						<transition name="slide">
+							<div v-if="player.activeBranch==(i-1)" style="width: 600px;">
+								<div v-for="j in 4">
+									<cult-upgrade-buttons :id="j"></cult-upgrade-buttons>
+								</div>
+							</div>
+						</transition>
+					</div>
+				</div>
+			</div>
+		</div>
+		`
+	})
+
     Vue.component('feat-button', {
 		props: ['id'],
 		template: `
@@ -203,6 +230,8 @@ function loadVue() {
 			canBranch,
 			showBranch,
 			newBranch,
+			followersPerSec,
+			worshipPerSec,
 			selectedBranch: player.activeBranch,
 		},
 	})
