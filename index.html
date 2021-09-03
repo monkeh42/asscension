@@ -160,13 +160,13 @@
             </div>
             <cult-upgrades></cult-upgrades>
         </div>
-        <div class="world-popup">
+        <div class="world-popup" v-bind:style="[ showWorldMap ? {} : { 'display': 'none' } ]">
             <div id="canvas-container" class="tooltip">
-                <canvas id="hexCanvas" width="800" height="600">
+                <canvas id="hexCanvas" width="800" height="600" v-bind:style="[ player.displayMap ? {} : { 'display': 'none' } ]">
                     
                 </canvas>
-                <!--<div v-if="player.displayMap && !player.displayFullMap" id="home-tooltip"></div>-->
-                <div id="canvas-tooltip" class="tooltiptext"></div>
+                <div v-if="player.displayMap && !player.displayFullMap" id="home-tooltip"></div>
+                <div v-if="player.displayFullMap" id="canvas-tooltip" class="tooltiptext"></div>
             </div>
             <br>
             <button onclick="showHideMap()" class="option-but" style="margin: 25px;">Close</button>

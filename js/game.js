@@ -153,7 +153,7 @@ function startGame() {
 function setupMap() {
     if (!player.displayFullMap) {
         ctx.save();
-        //clipMap();
+        clipMap();
         setupHomeTooltip();
     } else {
         ctx.restore();

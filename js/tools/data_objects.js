@@ -29,8 +29,8 @@ var START_PLAYER = {
     branches: [],
     activeBranch: 0,
 
-    displayMap: false,
-    displayFullMap: false,
+    displayMap: true,
+    displayFullMap: true,
     homeCountryID: -1,
     homeCountryName: '',
 
