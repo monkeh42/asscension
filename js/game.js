@@ -27,6 +27,8 @@ var hovered;
 
 var showWorldMap = false;
 
+var showOptions = false;
+
 function init() {
     loadGame();
 
@@ -234,6 +236,10 @@ function gameLoop() {
 
 function showHideMap() {
     showWorldMap = !showWorldMap;
+}
+
+function showHideOptions() {
+    showOptions = !showOptions;
 }
 
 function copyHexes(newArray, oldArray) {

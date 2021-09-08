@@ -132,18 +132,10 @@
                 <branch-button></branch-button>
                 <div v-if="player.displayMap">
                     <button onclick="showHideMap()" class="option-but">World Map</button>
+                    <button onclick="showHideOptions()" class="option-but">Options</button>
                 </div>
                 <div v-if="autosaveNotify" class="save-notify">Autosaved!</div>
                 <div v-if="manSaveNotify" class="save-notify">Saved!</div>
-                <button class="option-but" v-on:click="hardReset()" style="position: absolute; bottom: 0; left: 0;">
-                    Hard Reset
-                </button>
-                <button class="option-but" v-on:click="importSave()" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); margin-left: 0; margin-right: 0;">
-                    Import/Export
-                </button>
-                <button class="option-but" v-on:click="manualSave()" style="position: absolute; bottom: 0; right: 0;">
-                    Manual Save
-                </button>
             </div>
         </div>
         <div id="upgrades">
@@ -175,6 +167,25 @@
             <button onclick="showHideMap()" class="option-but" style="margin: 25px;">Close</button>
         </div>
         <adv-choice-popup ref="advpop"></adv-choice-popup>
+        <div class="options-popup" v-bind:style="[ showOptions ? {} : { 'display': 'none' } ]">
+            <div style="margin: 25px;">
+                <button class="option-but" v-on:click="hardReset()">
+                    Hard Reset
+                </button>
+                <button class="option-but" v-on:click="importSave()">
+                    Import/Export
+                </button>
+                <button class="option-but" v-on:click="manualSave()">
+                    Manual Save
+                </button>
+            </div>
+            <div style="margin: 25px;">
+                <button onclick="showHideOptions()" class="option-but">Close</button>
+            </div>
+            <div style="position: absolute; bottom: 0; width: 100%; text-align: center;">
+                Check out my other projects <a href="https://games.monkeh.us" target="_blank">here!</a>
+            </div>
+        </div>
     </div>
 </body>
 
