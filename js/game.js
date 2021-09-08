@@ -148,6 +148,8 @@ function startGame() {
     save();
 
     startInterval();
+
+    document.getElementById('loading-splash').style.display = 'none';
 }
 
 function setupMap() {

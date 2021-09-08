@@ -18,6 +18,20 @@ h4 {
     font-size: 14pt;
 }
 
+#loading-splash {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: bold;
+    background-color: #95dffc;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    line-height: 100vh;
+    text-align: center;
+    z-index: 10;
+}
+
 #header {
     margin-top: 15px;
 }
